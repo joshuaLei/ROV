@@ -1,19 +1,27 @@
 import cv2
 import numpy as np
-import math
 
 class ROV:
     def __init__(self, lower, upper):
         self.lower = lower;
         self.upper = upper;
 
-    def detection(self, frame, mask, areaval=100,  lenval=0.03):
+    def mask(self, frame):
+        lower = self.lower;
+        upper = self.upper;
+        bgr = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
+        lower = np.array(lower)
+        upper = np.array(upper)
+        mask = cv2.inRange(bgr, lower, upper)
+        return mask
+
+    def detection(self, mask, areaval=100,  lenval=0.03):
         triangle = 0
         square = 0
         circle = 0
         line = 0
         array = []
-        im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in contours:
             rect = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rect)
@@ -46,16 +54,7 @@ class ROV:
 
                 else:
                     line = line + 1
-        return box, array
-
-    def mask(self, frame):
-        lower = self.lower;
-        upper = self.upper;
-        bgr = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
-        lower = np.array(lower)
-        upper = np.array(upper)
-        mask = cv2.inRange(bgr, lower, upper)
-        return mask
+        return array
 
     def export(self, square, triangle, circle, line):
         img = np.zeros((297, 210, 3), np.uint8)
@@ -74,10 +73,10 @@ class ROV:
 
     def run(self, frame):
         m = self.mask(frame);
-        box, cnt = self.detection(frame, m);
+        cnt = self.detection(m);
         self.export(cnt[0][0], cnt[0][1], cnt[0][2], cnt[0][3])
 
-frame = cv2.imread("img/shape.png")
+frame = cv2.imread("img/test.jpg")
 mission = ROV([0,0,0], [70,70,70])
 mission.run(frame)
 
