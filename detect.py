@@ -23,14 +23,8 @@ class ROV:
         array = []
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in contours:
-            rect = cv2.minAreaRect(cnt)
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
             area = cv2.contourArea(cnt)
             if area > areaval:
-                M = cv2.moments(cnt)
-                cX = int(M["m10"] / M["m00"])
-                cY = int(M["m01"] / M["m00"])
                 cnt_len = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, lenval * cnt_len, True)
                 if len(approx) == 3:
@@ -38,20 +32,17 @@ class ROV:
                         triangle = 0
                     else:
                         triangle = triangle + 1
-
                 elif len(approx) == 4:
                     if square >= 6:
                         square = 0
                     else:
                         square = square + 1
-
                 elif ((len(approx) > 7) and (len(approx) < 9)):
                     if circle >= 6:
                         circle = 0
                     else:
                         circle = circle + 1
                         array.insert(0, [square, triangle, circle, line])
-
                 else:
                     line = line + 1
         return array
