@@ -79,4 +79,3 @@ class ROV:
 frame = cv2.imread("img/shape.png")
 mission = ROV([0,0,0], [70,70,70])
 mission.run(frame)
-
