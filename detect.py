@@ -13,12 +13,6 @@ class ROV:
         circle = 0
         line = 0
         array = []
-        FIRST = 0
-        BLUE = (255, 0, 0)
-        GREEN = (0, 255, 0)
-        RED = (0, 0, 255)
-        YELLOW = (0, 255, 255)
-        THICKNESS = 3
         im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in contours:
             rect = cv2.minAreaRect(cnt)
@@ -36,32 +30,22 @@ class ROV:
                         triangle = 0
                     else:
                         triangle = triangle + 1
-                        #cv2.circle(frame, (cX, cY), 7, (229, 83, 0), -1)
-                        #cv2.putText(frame, "triangle", (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-                        #cv2.drawContours(frame, [cnt], FIRST, GREEN, THICKNESS)
+
                 elif len(approx) == 4:
                     if square >= 6:
                         square = 0
                     else:
                         square = square + 1
-                        #cv2.circle(frame, (cX, cY), 7, (229, 83, 0), -1)
-                        #cv2.putText(frame, "sqaure", (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-                        #cv2.drawContours(frame, [cnt], FIRST, BLUE, THICKNESS)
+
                 elif ((len(approx) > 7) and (len(approx) < 9)):
                     if circle >= 6:
                         circle = 0
                     else:
                         circle = circle + 1
-                        #cv2.circle(frame, (cX, cY), 7, (229, 83, 0), -1)
-                        #cv2.putText(frame, "circle", (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-                        #cv2.drawContours(frame, [cnt], FIRST, YELLOW, THICKNESS)
                         array.insert(0, [square, triangle, circle, line])
 
                 else:
                     line = line + 1
-                    #cv2.circle(frame, (cX, cY), 7, (229, 83, 0), -1)
-                    #cv2.putText(frame, "line", (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-                    #cv2.drawContours(frame, [cnt], FIRST, RED, THICKNESS)
         return box, array
 
     def mask(self, frame):
