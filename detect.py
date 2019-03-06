@@ -76,7 +76,7 @@ class ROV:
         cnt = self.detection(m);
         self.export(cnt[0][0], cnt[0][1], cnt[0][2], cnt[0][3])
 
-frame = cv2.imread("img/test.jpg")
+frame = cv2.imread("img/shape.png")
 mission = ROV([0,0,0], [70,70,70])
 mission.run(frame)
 
