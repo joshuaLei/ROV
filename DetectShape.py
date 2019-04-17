@@ -171,7 +171,7 @@ if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
     cap.set(3, 800)
     cap.set(4, 600)
-q
+
     while True:
         ret, img = cap.read()
         mission = ROV([0, 0, 0], [70, 70, 70])
