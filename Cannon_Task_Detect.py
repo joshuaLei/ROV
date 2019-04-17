@@ -1,6 +1,7 @@
 import cv2 as cv
 import time
 import random
+import math
 
 
 class ImageTool(object):
@@ -26,6 +27,12 @@ class ImageTool(object):
         self.e2 = 150
         self.e3 = 100
 
+        self.ref = 0
+        self.tmp = 0
+        self.ref_real = 50.6
+        self.tmp_real = 0
+
+        self.ref_val = 3
     def capture(self):
         success, self.frame = self.video.read()
         return self.frame
@@ -53,15 +60,15 @@ class ImageTool(object):
                 if self.mode == 1:
                     image = self.source_frame.copy()
                     self.ref_pos_end = (x, y)
-                    cv.line(image, self.ref_pos_start, self.ref_pos_end, (0, 255, 255), 2, cv.LINE_AA)
+                    cv.line(image, self.ref_pos_start, self.ref_pos_end, (0, 255, 255), 1, cv.LINE_AA)
                     self.frame = image
 
                 if self.mode == 2:
                     image = self.source_frame.copy()
-                    cv.line(image, self.ref_pos_start, self.ref_pos_end, (0, 255, 255), 2, cv.LINE_AA)
-                    cv.line(image, self.tmp_pos_start[-1], (x, y), (0, 255, 0), 2, cv.LINE_AA)
+                    cv.line(image, self.ref_pos_start, self.ref_pos_end, (0, 255, 255), 1, cv.LINE_AA)
+                    cv.line(image, self.tmp_pos_start[-1], (x, y), (0, 255, 0), 1, cv.LINE_AA)
                     for i in range(len(self.tmp_pos_end)):
-                        cv.line(image, self.tmp_pos_start[i], self.tmp_pos_end[i], (0, 255, 0), 2, cv.LINE_AA)
+                        cv.line(image, self.tmp_pos_start[i], self.tmp_pos_end[i], (0, 255, 0), 1, cv.LINE_AA)
                     self.frame = image
         else:
             if event == cv.EVENT_LBUTTONDBLCLK:
@@ -75,8 +82,29 @@ class ImageTool(object):
             if event == cv.EVENT_RBUTTONDBLCLK:
                 self.detect_color_from = (0, 0, 0)
                 self.detect_color_to = (180, 255, 255)
-    def calculation(self, Rp_start, Rp_end, Tp_start, Tp_end):
-        pass
+
+    def calculation_length(self, Rp_start, Rp_end, Tp_start, Tp_end):
+        #get ref point x, y
+        xRS = Rp_start[0]
+        yRS = Rp_start[1]
+        xRE = Rp_end[0]
+        yRE = Rp_end[1]
+        ref_line = math.sqrt(math.pow((xRS - xRE), 2) + math.pow((yRS - yRE), 2))
+        self.ref = ref_line
+        print('ref_line:', ref_line)
+
+        #get tmp point x, y
+        xTS = Tp_start[-1][0]
+        yTS = Tp_start[-1][1]
+        xTE = Tp_end[-1][0]
+        yTE = Tp_end[-1][1]
+        tmp_line = math.sqrt(math.pow((xTS - xTE), 2) + math.pow((yTS - yTE), 2))
+        self.tmp = tmp_line
+        print('tmp_line', tmp_line)
+
+    def calculation_result(self, ref, tmp):
+        self.tmp_real = ((self.ref_real * tmp)/ref) - self.ref_val
+        print("result", self.tmp_real)
 
 if __name__ == "__main__":
     tool = ImageTool()
@@ -107,13 +135,10 @@ if __name__ == "__main__":
             cv.imwrite(file, tool.frame)
 
         if key == ord('c'):
-            tool.calculation(tool.ref_pos_start, tool.ref_pos_end, tool.tmp_pos_start, tool.tmp_pos_end)
-            print('Temporary start:', tool.tmp_pos_start)
-            print('Temporary end:', tool.tmp_pos_end)
-            print('Ref start:', tool.ref_pos_start)
-            print('Ref end:', tool.ref_pos_end)
-
-
+            tool.calculation_length(tool.ref_pos_start, tool.ref_pos_end, tool.tmp_pos_start, tool.tmp_pos_end)
+            tool.calculation_result(tool.ref, tool.tmp)
+            #print('tmp start:', tool.tmp_pos_start)
+            #print('tmp end:', tool.tmp_pos_end)
 
     tool.video.release()
     cv.destroyAllWindows()
