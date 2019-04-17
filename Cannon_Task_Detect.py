@@ -29,10 +29,11 @@ class ImageTool(object):
 
         self.ref = 0
         self.tmp = 0
-        self.ref_real = 50.6
+        self.ref_real = 30.2
         self.tmp_real = 0
 
         self.ref_val = 3
+
     def capture(self):
         success, self.frame = self.video.read()
         return self.frame
@@ -103,7 +104,7 @@ class ImageTool(object):
         print('tmp_line', tmp_line)
 
     def calculation_result(self, ref, tmp):
-        self.tmp_real = ((self.ref_real * tmp)/ref) - self.ref_val
+        self.tmp_real = ((self.ref_real * tmp)/ref)
         print("result", self.tmp_real)
 
 if __name__ == "__main__":
