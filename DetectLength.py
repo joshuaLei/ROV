@@ -5,18 +5,19 @@ import math
 cap = cv2.VideoCapture(1)
 
 def capture(cap):
-    ret, cap = cap.read()
-    frame = cv2.flip(cap, 1)
-    #cv2.imshow('srcframe', frame)
+    ret, frame = cap.read()
     mask(frame)
 
+
 def mask(frame):
-    bgr = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
-    lower = np.array([0,0,0])
-    upper = np.array([70,70,70])
-    mask = cv2.inRange(bgr, lower, upper)
-    #cv2.imshow('binary image', mask)
-    detect(frame, mask, 10000)
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    lower = np.array([60,120,120])
+    upper = np.array([100,150,150])
+    #lower = np.array([114,141,83])
+    #upper = np.array([0,255,175])
+    mask = cv2.inRange(hsv, lower, upper)
+    cv2.imshow('binary image', mask)
+    detect(frame, mask, 1000)
 
 def detect(frame, mask, areaval):
     im2, contours, hierarcy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -27,8 +28,8 @@ def detect(frame, mask, areaval):
             box = cv2.boxPoints(rect)
             box = np.int0(box)
             cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
-            cv2.imshow('frame', frame)
-            calculation(frame, box, 1.8, rect)
+            calculation(frame, box, 1.7, rect)
+        cv2.imshow('frame', frame)
 
 def calculation(frame, box, width, center):
     x1 = box[0][0]
@@ -55,7 +56,7 @@ def calculation(frame, box, width, center):
     cv2.imshow('frame', frame)
 
 
-while(1):
+while(True):
     capture(cap)
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
