@@ -12,4 +12,6 @@ for roots, subfolders, filenames in os.walk("photos"):
 
 print(file)
 
-cv.imread("photos/%s" % file)
+img = cv.imread("photos/%s" % file)
+cv.imshow("img", img)
+cv.waitKey(0)

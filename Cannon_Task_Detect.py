@@ -75,7 +75,8 @@ class ImageTool(object):
             if event == cv.EVENT_RBUTTONDBLCLK:
                 self.detect_color_from = (0, 0, 0)
                 self.detect_color_to = (180, 255, 255)
-
+    def calculation(self, Rp_start, Rp_end, Tp_start, Tp_end):
+        pass
 
 if __name__ == "__main__":
     tool = ImageTool()
@@ -104,6 +105,15 @@ if __name__ == "__main__":
         if key == ord('s'):
             file = "photos/IMG_%s_%d.jpg" % (time.strftime("%Y%m%d_%H%M%S", time.localtime()), random.randint(1, 1000))
             cv.imwrite(file, tool.frame)
+
+        if key == ord('c'):
+            tool.calculation(tool.ref_pos_start, tool.ref_pos_end, tool.tmp_pos_start, tool.tmp_pos_end)
+            print('Temporary start:', tool.tmp_pos_start)
+            print('Temporary end:', tool.tmp_pos_end)
+            print('Ref start:', tool.ref_pos_start)
+            print('Ref end:', tool.ref_pos_end)
+
+
 
     tool.video.release()
     cv.destroyAllWindows()
