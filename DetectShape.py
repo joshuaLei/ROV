@@ -2,129 +2,197 @@ import cv2
 import numpy as np
 import math
 
-triangle = 0
-square = 0
-circle = 0
-line = 0
-array = []
+_triangle = 0
+_rectangle = 0
+_circle = 0
+_line = 0
 
+_num_of_shapes = {
+    "circle": 0,
+    "line": 0,
+    "triangle": 0,
+    "rectangle": 0
+}
 
-def mask(frame):
-    bgr = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
-    lower = np.array([0, 0, 0])
-    upper = np.array([70, 70, 70])
-    mask = cv2.inRange(bgr, lower, upper)
-    detection(frame, mask, 1000, 100000, 0.02, square, triangle, circle, line)
+class ROV:
+    def __init__(self, lower, upper):
+        self.lower = lower
+        self.upper = upper
 
+    def preprocessing(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.medianBlur(gray, 5)
+        ret, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        cv2.imshow('thresh', thresh)
+        cv2.waitKey(1)
+        return thresh
 
-def detection(frame, mask, areaval, lenval, square, triangle, circle, line):
-    FIRST = 0
-    BLUE = (255, 0, 0)
-    GREEN = (0, 255, 0)
-    RED = (0, 0, 255)
-    YELLOW = (0, 255, 255)
-    THICKNESS = 3
-    im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    contour_list = []
-    for cnt in contours:
-        rect = cv2.minAreaRect(cnt)
-        box = cv2.boxPoints(rect)
-        box = np.int0(box)
-        d = calculation(box)
-        area = cv2.contourArea(cnt)
-        if area > areaval:
-            M = cv2.moments(cnt)
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
-            cnt_len = cv2.arcLength(cnt, True)
-            approx = cv2.approxPolyDP(cnt, lenval * cnt_len, True)
-            if len(approx) == 3:
-                if triangle >= 6:
-                    triangle = 0
-                else:
-                    triangle = triangle + 1
-                cv2.circle(frame, (cX, cY), 7, (229, 83, 0), -1)
-                cv2.putText(frame, "triangle", (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-                cv2.drawContours(frame, [cnt], FIRST, GREEN, THICKNESS)
-            elif len(approx) == 4:
-                    #(x, y, w, h) = cv2.boundingRect(approx)
-                    #ar = w / float(h)
-                    #if ar >= 0.95 and ar <= 1.05:
-                    if square >= 6:
-                        square = 0
+    def white_mask(self, image):
+        thresh = self.preprocessing(image)
+        _, contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        max_area = 0
+        max_cnt = None
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > max_area:
+                max_area = area
+                max_cnt = cnt
+
+        if max_cnt is None:
+            return None
+
+        x, y, w, h = cv2.boundingRect(max_cnt)
+        return image[y:y + h, x:x + w].copy()
+
+    def shape_mask(self, image):
+        thresh = self.preprocessing(image)
+        thresh = 255 - thresh
+        a, contours, b = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        image_h, image_w, _ = image.shape
+        bounding = 0.01
+        bounding_x = image_w * bounding
+        bounding_y = image_h * bounding
+
+        target_contours = []
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > 100:
+                x, y, w, h = cv2.boundingRect(cnt)
+                if x > bounding_x and x + w < image_w - bounding_x and \
+                        y > bounding_y and y + h < image_h - bounding_y:
+                    target_contours.append(cnt)
+
+                cv2.drawContours(image, [cnt], 0, (0, 255, 0), 2)
+
+        min_x = image_w
+        min_y = image_h
+        max_x = 0
+        max_y = 0
+
+        for cnt in target_contours:
+            x, y, w, h = cv2.boundingRect(cnt)
+            if x + w > max_x:
+                max_x = x + w
+            if x < min_x:
+                min_x = x
+            if y + h > max_y:
+                max_y = y + h
+            if y < min_y:
+                min_y = y
+
+        space = 0
+        min_y = max(min_y - space, 0)
+        max_y = min(max_y + space, image_h)
+        min_x = max(min_x - space, 0)
+        max_x = min(max_x + space, image_w)
+
+        return image[min_y:max_y, min_x:max_x].copy()
+
+    def detection(self, image, is_draw=False):
+        if image is None:
+            print('none')
+            return None, 0, 0, 0, 0
+        else:
+            print(image.shape)
+            if image.shape[0] == 0 or image.shape[1] == 0:
+                return None, 0, 0, 0, 0
+            cv2.imshow('image', image)
+            cv2.waitKey(1)
+            image = cv2.resize(image, (800, 450), interpolation = cv2.INTER_AREA)
+            thresh = self.preprocessing(image)
+            thresh = 255 - thresh
+            _, contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            for cnt in contours:
+                area = cv2.contourArea(cnt)
+                if area > 100:
+                    x, y, w, h = cv2.boundingRect(cnt)
+                    epsilon = 0.03 * cv2.arcLength(cnt, True)
+                    approx = cv2.approxPolyDP(cnt, epsilon, True)
+
+                    vertex = 0
+                    for i in range(len(approx)):
+                        p1 = approx[i]
+                        p2 = approx[(i + 1) % len(approx)]
+                        e = np.sqrt(np.sum(abs(p1 - p2) ** 2))
+                        if e >= 15:
+                            vertex += 1
+                    # vertex = len(approx)
+
+                    if is_draw:
+                        cv2.drawContours(image, [cnt], 0, (0, 255, 0), 1)
+                        cv2.putText(image, str(vertex), (x + int(w / 2) - 5, y + int(h / 2) + 5), cv2.FONT_HERSHEY_SIMPLEX,
+                                   0.5, (0, 0, 255), lineType=cv2.LINE_AA)
+
+                    if vertex == 2:
+                        _num_of_shapes["line"] += 1
+                    elif vertex == 3:
+                        _num_of_shapes["triangle"] += 1
+                    elif vertex == 4:
+                        (x, y, w, h) = cv2.boundingRect(approx)
+                        ar = w / float(h)
+                        if ar >= 0.5 and ar <= 1.5:
+                            _num_of_shapes["rectangle"] += 1
+                        else:
+                            _num_of_shapes["line"] += 1
                     else:
-                        square = square + 1
-                    cv2.circle(frame, (cX, cY), 7, (229, 83, 0), -1)
-                    cv2.putText(frame, "sqaure", (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-                    cv2.drawContours(frame, [cnt], FIRST, BLUE, THICKNESS)
-            elif ((len(approx) > 7) and (len(approx) < 9)):
-                if circle >= 6:
-                    circle = 0
-                else:
-                    circle = circle + 1
-                cv2.circle(frame, (cX, cY), 7, (229, 83, 0), -1)
-                cv2.putText(frame, "circle", (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-                cv2.drawContours(frame, [cnt], FIRST, YELLOW, THICKNESS)
-                # print("square=", square)
-                # print("triangle=", triangle)
-                # print("circle=", circle)
-                # print("line=", line)
-                array.insert(0, [square, triangle, circle, line])
+                        _num_of_shapes["circle"] += 1
+            return image, _num_of_shapes["circle"], _num_of_shapes["line"], _num_of_shapes["triangle"], _num_of_shapes["rectangle"]
 
-            else:
-                if abs(d - area) < 1000:
-                    if line >= 6:
-                        line = 0
-                    else:
-                        line = line + 1
-                        cv2.circle(frame, (cX, cY), 7, (229, 83, 0), -1)
-                        cv2.putText(frame, "line", (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-                        cv2.drawContours(frame, [cnt], FIRST, RED, THICKNESS)
+    def show(self, img, circle, line, triangle, rectangle):
+        cv2.circle(img, (150, 40), 20, (0, 0, 255), -1)
+        triangle_cnt = np.array([(150, 90), (130, 120), (170, 120)])
+        cv2.line(img, (130, 180), (170, 180), (0, 0, 255), 4)
+        cv2.rectangle(img, (170, 230), (130, 270), (0, 0, 255), -1)
 
-            cv2.imshow("detected shapeas", frame)
+        cv2.drawContours(img, [triangle_cnt], 0, (0, 0, 255), -1)
+        cv2.putText(img, str(circle), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(img, str(triangle), (50, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(img, str(line), (50, 190), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(img, str(rectangle), (50, 260), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.imshow('image', img)
+        cv2.waitKey(1)
 
+    def run(self, image):
+        white = self.white_mask(image)
+        board = self.shape_mask(white)
+        cv2.imshow("board", board)
+        cv2.waitKey(0)
 
-def calculation(box):
-    x1 = box[0][0]
-    x2 = box[1][0]
-    y1 = box[0][1]
-    y2 = box[1][1]
-    C1 = math.sqrt(math.pow((x1 - x2), 2) + math.pow((y1 - y2), 2))
+        frame, circle, line, triangle, rectangle= self.detection(board, True)
+        if frame is None:
+            print('none')
+            return None, 0, 0, 0, 0
+        else:
+            self.show(frame, _circle, _line, _triangle, _rectangle)
+            print(circle, line, triangle, rectangle)
+            return frame, circle, line, triangle, rectangle
 
-    x3 = box[1][0]
-    x4 = box[2][0]
-    y3 = box[1][1]
-    y4 = box[2][1]
-    C2 = math.sqrt(math.pow((x3 - x4), 2) + math.pow((y3 - y4), 2))
-
-    d = C1 * C2
-    return d
-
-
-def show(square, triangle, circle, line):
-    img = np.zeros((297, 210, 3), np.uint8)
-    cv2.circle(img, (150, 40), 20, (0, 0, 255), -1)
-    triangle_cnt = np.array([(150, 90), (130, 120), (170, 120)])
-    cv2.line(img, (130, 180), (170, 180), (0, 0, 255), 4)
-    cv2.rectangle(img, (170, 230), (130, 270), (0, 0, 255), -1)
-
-    cv2.drawContours(img, [triangle_cnt], 0, (0, 0, 255), -1)
-    cv2.putText(img, str(circle), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-    cv2.putText(img, str(triangle), (50, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-    cv2.putText(img, str(line), (50, 190), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-    cv2.putText(img, str(square), (50, 260), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-    for i in range(10):
-        cv2.imwrite('ROV{}.png'.format(i), img)
-        break
-
-
-while (1):
+if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
-    ret, frame = cap.read()
-    mask(frame)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        show(array[0][0], array[0][1], array[0][2], array[0][3])
-        break
+    cap.set(3, 800)
+    cap.set(4, 600)
 
-cv2.destroyAllWindows()
-cap.release()
+    while True:
+        ret, img = cap.read()
+        mission = ROV([0, 0, 0], [70, 70, 70])
+        print("A", img.shape)
+        img = cv2.imread("photo/img1.jpg", cv2.IMREAD_COLOR)
+        frame, circle, line, triangle, rectangle = mission.run(img)
+        if frame is None:
+            continue
+        else:
+            k = cv2.waitKey(1)
+
+            if k == 32:
+                _circle = circle
+                _line = line
+                _triangle = triangle
+                _rectangle = rectangle
+                mission.show(frame, _circle, _line, _triangle, _rectangle)
+            if k == 27:
+                print("stop")
+                break
+            else:
+                continue
+    cap.release()
+    cv2.destroyAllWindows()
