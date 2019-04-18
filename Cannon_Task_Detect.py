@@ -7,7 +7,7 @@ import math
 class ImageTool(object):
 
     def __init__(self, debug=True):
-        self.video = cv.VideoCapture(0)
+        self.video = cv.VideoCapture(1)
         self.frame = None
 
         self.pause = False
@@ -29,13 +29,14 @@ class ImageTool(object):
 
         self.ref = 0
         self.tmp = 0
-        self.ref_real = 30.2
+        self.ref_real = 1152
         self.tmp_real = 0
 
         self.ref_val = 3
 
     def capture(self):
         success, self.frame = self.video.read()
+        self.frame = cv.flip(self.frame, 3)
         return self.frame
 
     def on_mouse_frame(self, event, x, y, flags, param):
