@@ -2,11 +2,12 @@ import cv2 as cv
 import time
 import random
 import math
+#from video import Video
 
 
 class ImageTool(object):
 
-    def __init__(self, debug=True):
+    def __init__(self, debug=False):
         self.video = cv.VideoCapture(1)
         self.frame = None
 
@@ -29,10 +30,10 @@ class ImageTool(object):
 
         self.ref = 0
         self.tmp = 0
-        self.ref_real = 1152
+        self.ref_real = 22
         self.tmp_real = 0
 
-        self.ref_val = 3
+        self.ref_val = 6
 
     def capture(self):
         success, self.frame = self.video.read()
@@ -105,6 +106,7 @@ class ImageTool(object):
         print('tmp_line', tmp_line)
 
     def calculation_result(self, ref, tmp):
+        print(self.ref_real)
         self.tmp_real = ((self.ref_real * tmp)/ref)
         print("result", self.tmp_real)
 
@@ -113,9 +115,34 @@ if __name__ == "__main__":
     cv.namedWindow("frame")
     cv.setMouseCallback("frame", tool.on_mouse_frame)
 
+    mode = str(input("Your calculation:"))
+    if mode == "length":
+        tool.ref_real == 13
+    elif mode == "radius1":
+        tool.ref_real == 15
+    elif mode == "radius2":
+        tool.ref_real == 19
+    elif mode == "radius2":
+        tool.ref_real == 20
+
+    cap = cv.VideoCapture(0)
+    #video = Video(port=4777)
+    #self.srcframe = cap
+    #self.frame = img
+
     while True:
+
         if not tool.pause:
-            frame = tool.capture()
+            #if not video.frame_available():
+                #continue
+
+            #cap = video.frame()
+            success, img = cap.read()
+            frame = cv.resize(img, (800, 600))
+            tool.source_frame = img
+            tool.frame = frame
+            #frame = tool.capture()
+            frame = cv.resize(frame, (800, 600))
             hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
             mask = cv.inRange(hsv, tool.detect_color_from, tool.detect_color_to)
             contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -130,7 +157,7 @@ if __name__ == "__main__":
             break
         if key == 32:
             tool.pause = not tool.pause
-            frame = tool.capture()
+            #frame = tool.capture()
             tool.source_frame = frame.copy()
         if key == ord('s'):
             file = "photos/IMG_%s_%d.jpg" % (time.strftime("%Y%m%d_%H%M%S", time.localtime()), random.randint(1, 1000))
