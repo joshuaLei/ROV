@@ -40,7 +40,7 @@ class ROV():
         self.srcframe = cv2.flip(self.frame, 3)
         return self.frame
 
-    def mask(self):
+    def msk(self):
         frame = self.frame
         hsv = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
         lower = np.array([0,0,0])
@@ -93,22 +93,21 @@ class ROV():
 
 
 if __name__ == "__main__":
-
     rov = ROV()
     i = 0
 
     while True:
-        #frame = rov.capture()
-        frame = rov.debug()
+        frame = rov.capture()
+        #frame = rov.debug()
         frame = cv2.resize(frame, (800, 600))
         rov.frame = frame
+        k = cv2.waitKey(1)
 
-        rov.mask()
+        rov.msk()
         rov.detect()
         rov.calculation()
         cv2.imshow('frame', rov.frame)
 
-        k = cv2.waitKey(1)
 
         if k == 32:
             cv2.imshow('freeze', frame)
