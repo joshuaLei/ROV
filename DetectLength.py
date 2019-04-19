@@ -1,65 +1,127 @@
 import cv2
 import numpy as np
 import math
+import time
+#from video import Video
 
-cap = cv2.VideoCapture(1)
+class ROV():
+    def __init__(self):
+        self.video1 = cv2.VideoCapture(1)
+        self.video2 = cv2.VideoCapture(0)#Video(port=4777)
+        self.srcframe = None
+        self.frame = None
+        self.mask = None
 
-def capture(cap):
-    ret, frame = cap.read()
-    mask(frame)
+        self.areaval = 1000
+        self.width = 1.7
+        self.rect = 0
+        self.box = None
 
+    def capture(self):
+        success, self.frame = self.video2.read()
+        self.frame = cv2.flip(self.frame, 3)
+        self.srcframe = cv2.flip(self.frame, 3)
+        return self.frame
 
-def mask(frame):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    lower = np.array([60,120,120])
-    upper = np.array([100,150,150])
-    #lower = np.array([114,141,83])
-    #upper = np.array([0,255,175])
-    mask = cv2.inRange(hsv, lower, upper)
-    cv2.imshow('binary image', mask)
-    detect(frame, mask, 1000)
-
-def detect(frame, mask, areaval):
-    im2, contours, hierarcy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if area > areaval:
-            rect = cv2.minAreaRect(cnt)
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
-            cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
-            calculation(frame, box, 1.7, rect)
-        cv2.imshow('frame', frame)
-
-def calculation(frame, box, width, center):
-    x1 = box[0][0]
-    x2 = box[1][0]
-    y1 = box[0][1]
-    y2 = box[1][1]
-    C1 = math.sqrt(math.pow((x1 - x2),2) + math.pow((y1 - y2),2))
-
-    x3 = box[1][0]
-    x4 = box[2][0]
-    y3 = box[1][1]
-    y4 = box[2][1]
-    C2 = math.sqrt(math.pow((x3 - x4),2) + math.pow((y3 - y4),2))
-
-    if C1 < C2:
-        ratio = abs(width/C1)
-        cal = ratio*C2
-    else:
-        ratio = abs(width/C2)
-        cal = ratio*C1
-
-    print('calculation',cal)
-    cv2.putText(frame, 'cal = {}'.format(cal), (int(center[0][0]), int(center[0][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-    cv2.imshow('frame', frame)
+        '''
+        video = self.video2
+        if not video.frame_available():
+            return None
+        cap = video.frame()
+        frame = cv.resize(cap, (800, 600))
+        self.frame = frame
+        self.srcframe = cap
+        '''
 
 
-while(True):
-    capture(cap)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
+    def debug(self):
+        success, self.frame = self.video1.read()
+        self.frame = cv2.flip(self.frame, 3)
+        self.srcframe = cv2.flip(self.frame, 3)
+        return self.frame
+
+    def mask(self):
+        frame = self.frame
+        hsv = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
+        lower = np.array([0,0,0])
+        upper = np.array([80,80,80])
+        #lower = np.array([60,120,120])
+        #upper = np.array([100,150,150])
+        #lower = np.array([114,141,83])
+        #upper = np.array([0,255,175])
+        mask = cv2.inRange(hsv, lower, upper)
+        self.mask = mask
+
+    def detect(self):
+        mask = self.mask
+        frame = self.frame
+        contours, hierarcy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > self.areaval:
+                rect = cv2.minAreaRect(cnt)
+                box = cv2.boxPoints(rect)
+                box = np.int0(box)
+                cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
+                self.box = box
+                self.center = rect
+                self.frame = frame
+
+    def calculation(self):
+        x1 = self.box[0][0]
+        x2 = self.box[1][0]
+        y1 = self.box[0][1]
+        y2 = self.box[1][1]
+        C1 = math.sqrt(math.pow((x1 - x2),2) + math.pow((y1 - y2),2))
+
+        x3 = self.box[1][0]
+        x4 = self.box[2][0]
+        y3 = self.box[1][1]
+        y4 = self.box[2][1]
+        C2 = math.sqrt(math.pow((x3 - x4),2) + math.pow((y3 - y4),2))
+
+        if C1 < C2:
+            ratio = abs(self.width/C1)
+            cal = ratio*C2
+        else:
+            ratio = abs(self.width/C2)
+            cal = ratio*C1
+
+        print('calculation',cal)
+        cv2.putText(frame, 'cal = {}'.format(cal), (int(self.center[0][0]), int(self.center[0][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
+        self.frame = frame
+
+
+if __name__ == "__main__":
+
+    rov = ROV()
+    i = 0
+
+    while True:
+        #frame = rov.capture()
+        frame = rov.debug()
+        frame = cv2.resize(frame, (800, 600))
+        rov.frame = frame
+
+        rov.mask()
+        rov.detect()
+        rov.calculation()
+        cv2.imshow('frame', rov.frame)
+
+        k = cv2.waitKey(1)
+
+        if k == 32:
+            cv2.imshow('freeze', frame)
+            continue
+
+        if k == ord('s'):
+                cv2.imwrite('photos/image'+str(time.time())+ '.jpg', frame)
+                print('save')
+                i+=1
+
+        if k == 27:
+            print("stop")
+            break
 
 cv2.destroyAllWindows()
-cap.release()
+#cap.release()

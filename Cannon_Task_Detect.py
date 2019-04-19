@@ -7,13 +7,14 @@ import math
 
 class ImageTool(object):
 
-    def __init__(self, debug=False):
-        self.video = cv.VideoCapture(1)
+    def __init__(self):
+        self.video1 = cv.VideoCapture(1)
+        self.video2 = cv.VideoCapture(0)#Video(port=4777)
         self.frame = None
 
         self.pause = False
         self.mode = 0
-        self.source_frame = None
+        self.srcframe = None
 
         self.ref_scale_rate = 1
         self.ref_pos_start = (0, 0)
@@ -36,7 +37,23 @@ class ImageTool(object):
         self.ref_val = 6
 
     def capture(self):
-        success, self.frame = self.video.read()
+        success, self.frame = self.video2.read()
+        self.frame = cv.flip(self.frame, 3)
+        return self.frame
+
+        '''
+        video = self.video2
+        if not video.frame_available():
+            return None
+        cap = video.frame()
+        frame = cv.resize(cap, (800, 600))
+        self.frame = frame
+        self.srcframe = cap
+        '''
+
+
+    def debug(self):
+        success, self.frame = self.video1.read()
         self.frame = cv.flip(self.frame, 3)
         return self.frame
 
@@ -61,13 +78,13 @@ class ImageTool(object):
 
             if event == cv.EVENT_MOUSEMOVE:
                 if self.mode == 1:
-                    image = self.source_frame.copy()
+                    image = self.srcframe.copy()
                     self.ref_pos_end = (x, y)
                     cv.line(image, self.ref_pos_start, self.ref_pos_end, (0, 255, 255), 1, cv.LINE_AA)
                     self.frame = image
 
                 if self.mode == 2:
-                    image = self.source_frame.copy()
+                    image = self.srcframe.copy()
                     cv.line(image, self.ref_pos_start, self.ref_pos_end, (0, 255, 255), 1, cv.LINE_AA)
                     cv.line(image, self.tmp_pos_start[-1], (x, y), (0, 255, 0), 1, cv.LINE_AA)
                     for i in range(len(self.tmp_pos_end)):
@@ -106,7 +123,7 @@ class ImageTool(object):
         print('tmp_line', tmp_line)
 
     def calculation_result(self, ref, tmp):
-        print(self.ref_real)
+        print('ref_real', self.ref_real)
         self.tmp_real = ((self.ref_real * tmp)/ref)
         print("result", self.tmp_real)
 
@@ -116,32 +133,20 @@ if __name__ == "__main__":
     cv.setMouseCallback("frame", tool.on_mouse_frame)
 
     mode = str(input("Your calculation:"))
-    if mode == "length":
-        tool.ref_real == 13
-    elif mode == "radius1":
-        tool.ref_real == 15
-    elif mode == "radius2":
-        tool.ref_real == 19
-    elif mode == "radius2":
-        tool.ref_real == 20
 
-    cap = cv.VideoCapture(0)
-    #video = Video(port=4777)
-    #self.srcframe = cap
-    #self.frame = img
+    if mode == "length":
+        tool.ref_real = 13
+    if mode == "radius1":
+        tool.ref_real = 15
+    if mode == "radius2":
+        tool.ref_real = 19
+    if mode == "radius3":
+        tool.ref_real = 20
 
     while True:
-
         if not tool.pause:
-            #if not video.frame_available():
-                #continue
-
-            #cap = video.frame()
-            success, img = cap.read()
-            frame = cv.resize(img, (800, 600))
-            tool.source_frame = img
-            tool.frame = frame
             #frame = tool.capture()
+            frame = tool.debug()
             frame = cv.resize(frame, (800, 600))
             hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
             mask = cv.inRange(hsv, tool.detect_color_from, tool.detect_color_to)
@@ -158,7 +163,7 @@ if __name__ == "__main__":
         if key == 32:
             tool.pause = not tool.pause
             #frame = tool.capture()
-            tool.source_frame = frame.copy()
+            tool.srcframe= frame.copy()
         if key == ord('s'):
             file = "photos/IMG_%s_%d.jpg" % (time.strftime("%Y%m%d_%H%M%S", time.localtime()), random.randint(1, 1000))
             cv.imwrite(file, tool.frame)
@@ -169,5 +174,5 @@ if __name__ == "__main__":
             #print('tmp start:', tool.tmp_pos_start)
             #print('tmp end:', tool.tmp_pos_end)
 
-    tool.video.release()
+    tool.video1.release()
     cv.destroyAllWindows()
