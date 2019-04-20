@@ -2,14 +2,14 @@ import cv2 as cv
 import time
 import random
 import math
-#from video import Video
+from video import Video
 
 
 class ImageTool(object):
 
     def __init__(self):
-        self.video1 = cv.VideoCapture(1)
-        self.video2 = cv.VideoCapture(0)#Video(port=4777)
+        #self.video1 = cv.VideoCapture(1)
+        #self.video2 = Video(port=4777)
         self.frame = None
 
         self.pause = False
@@ -31,12 +31,13 @@ class ImageTool(object):
 
         self.ref = 0
         self.tmp = 0
-        self.ref_real = 22
+        self.ref_real = 12#24.5 
         self.tmp_real = 0
 
         self.ref_val = 6
 
     def capture(self):
+        '''
         success, self.frame = self.video2.read()
         self.frame = cv.flip(self.frame, 3)
         return self.frame
@@ -49,8 +50,7 @@ class ImageTool(object):
         frame = cv.resize(cap, (800, 600))
         self.frame = frame
         self.srcframe = cap
-        '''
-
+        return self.frame
 
     def debug(self):
         success, self.frame = self.video1.read()
@@ -97,6 +97,7 @@ class ImageTool(object):
                 h = int(h)
                 s = int(s)
                 v = int(v)
+                print('h,s,v',h,s,v)
                 self.detect_color_from = (max(h - self.e1, 0), max(s - self.e2, 16), max(v - self.e3, 16))
                 self.detect_color_to = (min(h + self.e1, 180), min(s + self.e2, 240), min(v + self.e3, 240))
             if event == cv.EVENT_RBUTTONDBLCLK:
@@ -132,25 +133,23 @@ if __name__ == "__main__":
     cv.namedWindow("frame")
     cv.setMouseCallback("frame", tool.on_mouse_frame)
 
-    mode = str(input("Your calculation:"))
+    video = Video(port=4777)
 
-    if mode == "length":
-        tool.ref_real = 13
-    if mode == "radius1":
-        tool.ref_real = 15
-    if mode == "radius2":
-        tool.ref_real = 19
-    if mode == "radius3":
-        tool.ref_real = 20
+    i = 0
 
     while True:
         if not tool.pause:
             #frame = tool.capture()
-            frame = tool.debug()
+            #frame = tool.debug()
+            if not video.frame_available():
+                continue
+
+            frame = video.frame()
             frame = cv.resize(frame, (800, 600))
+            tool.frame = frame
             hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
             mask = cv.inRange(hsv, tool.detect_color_from, tool.detect_color_to)
-            contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+            _, contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
             cv.drawContours(frame, contours, -1, (0, 255, 0), 2)
         else:
             frame = tool.frame
@@ -158,6 +157,7 @@ if __name__ == "__main__":
         cv.imshow("frame", frame)
 
         key = cv.waitKey(1)
+
         if key == 27:
             break
         if key == 32:
@@ -174,5 +174,5 @@ if __name__ == "__main__":
             #print('tmp start:', tool.tmp_pos_start)
             #print('tmp end:', tool.tmp_pos_end)
 
-    tool.video1.release()
+    #tool.video1.release()
     cv.destroyAllWindows()

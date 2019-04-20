@@ -6,8 +6,8 @@ import time
 
 class ROV():
     def __init__(self):
-        self.video1 = cv2.VideoCapture(1)
-        self.video2 = cv2.VideoCapture(0)#Video(port=4777)
+        self.video1 = cv2.VideoCapture(0)
+        #self.video2 = Video(port=4777)
         self.srcframe = None
         self.frame = None
         self.mask = None
@@ -17,21 +17,23 @@ class ROV():
         self.rect = 0
         self.box = None
 
+        self.cal_val = 1
+
     def capture(self):
+        '''
         success, self.frame = self.video2.read()
         self.frame = cv2.flip(self.frame, 3)
         self.srcframe = cv2.flip(self.frame, 3)
         return self.frame
-
         '''
+        
         video = self.video2
         if not video.frame_available():
             return None
         cap = video.frame()
-        frame = cv.resize(cap, (800, 600))
-        self.frame = frame
+        self.frame = cap
         self.srcframe = cap
-        '''
+        return self.frame
 
 
     def debug(self):
@@ -44,7 +46,7 @@ class ROV():
         frame = self.frame
         hsv = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
         lower = np.array([0,0,0])
-        upper = np.array([80,80,80])
+        upper = np.array([60,60,60])
         #lower = np.array([60,120,120])
         #upper = np.array([100,150,150])
         #lower = np.array([114,141,83])
@@ -64,6 +66,7 @@ class ROV():
                 box = np.int0(box)
                 cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
                 self.box = box
+                print(box)
                 self.center = rect
                 self.frame = frame
 
@@ -87,6 +90,7 @@ class ROV():
             ratio = abs(self.width/C2)
             cal = ratio*C1
 
+        #cal = cal + self.cal_val
         print('calculation',cal)
         cv2.putText(frame, 'cal = {}'.format(cal), (int(self.center[0][0]), int(self.center[0][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
         self.frame = frame
@@ -95,11 +99,19 @@ class ROV():
 if __name__ == "__main__":
     rov = ROV()
     i = 0
-
+    #video = Video(port=4777)
     while True:
-        frame = rov.capture()
-        #frame = rov.debug()
-        frame = cv2.resize(frame, (800, 600))
+        #frame = rov.capture()
+        cap = rov.debug()
+        #if not video.frame_available():
+            #continue
+
+        #cap = video.frame()
+        #frame = cap
+        #rov.frame = cap
+        #rov.srcframe = cap
+
+        frame = cv2.resize(cap, (800, 600))
         rov.frame = frame
         k = cv2.waitKey(1)
 
@@ -123,4 +135,3 @@ if __name__ == "__main__":
             break
 
 cv2.destroyAllWindows()
-#cap.release()

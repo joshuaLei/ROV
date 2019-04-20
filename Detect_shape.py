@@ -8,8 +8,7 @@ import time
 class ROV:
     def __init__(self, debug=True):
         self.video1 = cv2.VideoCapture(1)
-        self.video2 = cv2.VideoCapture(0)#Video(port=4777)
-
+        #self.video2 = Video(port=4777)
 
         self._triangle = 0
         self._rectangle = 0
@@ -32,7 +31,7 @@ class ROV:
         self.status = True
 
     def debug(self):
-        success, self.frame = self.video2.read()
+        success, self.frame = self.video1.read()
         self.frame = cv2.flip(self.frame, 3)
         self.srcframe = self.frame
         return self.frame
@@ -47,7 +46,7 @@ class ROV:
     def preprocessing(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.medianBlur(image, 5)
-        ret, thresh = cv2.threshold(image, 255, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
         cv2.imshow("mask2", thresh)
         self.mask = thresh
         # print("preprocess")
@@ -62,11 +61,19 @@ class ROV:
         self.frame = cropped
         self.cropped = img
         #cv2.imshow('test', self.frame)
-        cv2.waitKey(1)
         # print("overlay")
 
     def white_mask(self):
+        #hsv = cv2.cvtColor(self.cropped, cv2.COLOR_BGR2HSV)
         thresh = self.preprocessing(self.cropped)
+        '''
+        sensitivity = 50
+        lower_white = np.array([0, 0, 0])
+        upper_white = np.array([0, 0, 255])
+
+        # Threshold the HSV image to get only white colors
+        thresh = cv2.inRange(hsv, lower_white, upper_white)
+        '''
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         max_area = 100
         max_cnt = None
@@ -75,7 +82,6 @@ class ROV:
             if area > max_area:
                 max_area = area
                 max_cnt = cnt
-                print("ok")
 
             #cv2.drawContours(self.cropped, cnt, -1, (0, 255, 0), 2)
             #cv2.imshow("test", self.cropped)
@@ -85,10 +91,10 @@ class ROV:
 
         x, y, w, h = cv2.boundingRect(max_cnt)
         # print("white_mask")
-        #self.mask = self.cropped[y:y + h, x:x + w].copy()
+        self.mask = self.cropped[y:y + h, x:x + w].copy()
 
     def shape_mask(self, image):
-        thresh = self.preprocessing(self.cropped)
+        thresh = self.preprocessing(self.mask)
         thresh = 255 - thresh
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         image_h, image_w, _ = image.shape
@@ -128,7 +134,7 @@ class ROV:
         max_x = min(max_x + space, image_w)
 
         #cv2.imshow("", image[min_y:max_y, min_x:max_x])
-        # cv2.waitKey(1)
+        #cv2.waitKey(0)
 
         self.mask = image[min_y:max_y, min_x:max_x].copy()
         # print("shape_mask")
@@ -142,16 +148,15 @@ class ROV:
             self._num_of_shapes["line"] = 0
             self._num_of_shapes["triangle"] = 0
             self._num_of_shapes["rectangle"] = 0
-            cv2.imshow("mask", self.mask)
-            org_h, org_w, _ = image.shape
-            rate_x = 800 / org_w
-            rate_y = 450 / org_h
+            #cv2.imshow("mask", self.mask)
+            #org_h, org_w, _ = image.shape
+            #rate_x = 800 / org_w
+            #rate_y = 450 / org_h
             image = cv2.resize(image, (800, 450), interpolation=cv2.INTER_AREA)
             #thresh = self.preprocessing(self.cropped)
-            mask = cv2.cvtColor(self.mask, cv2.COLOR_HSV2BGR)
             lower = np.array([0, 0, 0])
-            upper = np.array([80, 80, 80])
-            mask = cv2.inRange(mask, lower, upper)
+            upper = np.array([120, 120, 120])
+            mask = cv2.inRange(image, lower, upper)
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             active_cnts = []
             for cnt in contours:
@@ -182,12 +187,14 @@ class ROV:
                             self._num_of_shapes["line"] = 0
                         else:
                             self._num_of_shapes["line"] += 1
-                    elif vertex == 3:
+
+                    if vertex == 3:
                         if self._num_of_shapes["triangle"] == 6:
                             self._num_of_shapes["triangle"] = 0
                         else:
                             self._num_of_shapes["triangle"] += 1
-                    elif vertex == 4:
+
+                    if vertex == 4:
                         (x, y, w, h) = cv2.boundingRect(approx)
                         ar = w / float(h)
                         if ar >= 0.5 and ar <= 1.5:
@@ -200,6 +207,7 @@ class ROV:
                                 self._num_of_shapes["line"] = 0
                             else:
                                 self._num_of_shapes["line"] += 1
+
                     else:
                         if self._num_of_shapes["circle"] == 6:
                             self._num_of_shapes["circle"] = 0
@@ -223,24 +231,27 @@ class ROV:
 
 if __name__ == "__main__":
     rov = ROV(True)
-
+    #video = Video(port=4777)
     i = 0
 
     while True:
         k = cv2.waitKey(1)
-
+        #if not video.frame_available():
+            #continue
+        #cap = video.frame()
+        #frame = cv2.resize(cap, (800, 600))
+        #rov.frame = frame
         frame = rov.debug()
-        #frame = rov.capture()
         frame = cv2.resize(frame, (800, 600))
         rov.overlay(frame)
         rov.preprocessing(rov.cropped)
         rov.white_mask()
-        rov.shape_mask(rov.cropped)
-        active_cnts = rov.detection(rov.mask, False)
+        rov.shape_mask(rov.mask)
+        active_cnts = rov.detection(rov.cropped, False)
         if rov.status == False:
             print("none")
-            continue
         else:
+            print("OK")
             cv2.drawContours(rov.frame, active_cnts, -1, (0, 255, 0), 2)
             rov.show(rov.frame)
             cv2.imshow('frame', rov.frame)
@@ -259,9 +270,6 @@ if __name__ == "__main__":
             cv2.imwrite('photos/image' + str(time.time()) + '.jpg', rov.source_img)
             print('save')
             i += 1
-
-        if rov.frame is None:
-            continue
 
     cv2.destroyAllWindows()
 
