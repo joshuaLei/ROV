@@ -65,23 +65,25 @@ class ROV():
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
                 cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
-                self.box = box
-                print(box)
                 self.center = rect
                 self.frame = frame
+                self.rect = rect
+                self.box = [box]
+                #print()
+                #return 0
 
     def calculation(self):
-        x1 = self.box[0][0]
-        x2 = self.box[1][0]
-        y1 = self.box[0][1]
-        y2 = self.box[1][1]
-        C1 = math.sqrt(math.pow((x1 - x2),2) + math.pow((y1 - y2),2))
+        x1 = self.box[0][0][0]
+        x2 = self.box[0][1][0]
+        y1 = self.box[0][0][1]
+        y2 = self.box[0][1][1]
+        C1 = math.sqrt(math.pow((x1 - x2), 2) + math.pow((y1 - y2), 2))
 
-        x3 = self.box[1][0]
-        x4 = self.box[2][0]
-        y3 = self.box[1][1]
-        y4 = self.box[2][1]
-        C2 = math.sqrt(math.pow((x3 - x4),2) + math.pow((y3 - y4),2))
+        x3 = self.box[0][1][0]
+        x4 = self.box[0][2][0]
+        y3 = self.box[0][1][1]
+        y4 = self.box[0][2][1]
+        C2 = math.sqrt(math.pow((x3 - x4), 2) + math.pow((y3 - y4), 2))
 
         if C1 < C2:
             ratio = abs(self.width/C1)
@@ -92,8 +94,8 @@ class ROV():
 
         #cal = cal + self.cal_val
         print('calculation',cal)
-        cv2.putText(frame, 'cal = {}'.format(cal), (int(self.center[0][0]), int(self.center[0][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
-        self.frame = frame
+        cv2.putText(self.frame, 'cal = {}'.format(cal), (int(self.center[0][0]), int(self.center[0][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
+        cv2.imshow('frame', self.frame)
 
 
 if __name__ == "__main__":
@@ -118,7 +120,7 @@ if __name__ == "__main__":
         rov.msk()
         rov.detect()
         rov.calculation()
-        cv2.imshow('frame', rov.frame)
+        #cv2.imshow('frame', rov.frame)
 
 
         if k == 32:

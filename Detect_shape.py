@@ -55,8 +55,8 @@ class ROV:
     def overlay(self, frame):
         overlay = frame.copy()
         cropped = frame.copy()
-        img = frame[50:525, 75:750].copy()
-        cv2.rectangle(overlay, (50, 75), (750, 525), (0, 0, 255), -1)
+        img = frame[120:480, 120:680].copy()
+        cv2.rectangle(overlay, (120, 120), (680, 480), (0, 0, 255), -1)
         cv2.addWeighted(overlay, 0.3, cropped, 1 - 0.3, 0, cropped)
         self.frame = cropped
         self.cropped = img
@@ -92,6 +92,7 @@ class ROV:
         x, y, w, h = cv2.boundingRect(max_cnt)
         # print("white_mask")
         self.mask = self.cropped[y:y + h, x:x + w].copy()
+        #cv2.imshow("white_mask", self.mask)
 
     def shape_mask(self, image):
         thresh = self.preprocessing(self.mask)
@@ -105,7 +106,7 @@ class ROV:
         target_contours = []
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area > 10:
+            if area > 500:
                 x, y, w, h = cv2.boundingRect(cnt)
                 if x > bounding_x and x + w < image_w - bounding_x and \
                         y > bounding_y and y + h < image_h - bounding_y:
@@ -138,6 +139,7 @@ class ROV:
 
         self.mask = image[min_y:max_y, min_x:max_x].copy()
         # print("shape_mask")
+        #cv2.imshow("shape_mask", self.mask)
 
     def detection(self, image, is_draw=True):
         if image.shape[0] == 0 or image.shape[1] == 0:
@@ -161,7 +163,7 @@ class ROV:
             active_cnts = []
             for cnt in contours:
                 area = cv2.contourArea(cnt)
-                if area > 100:
+                if area > 500:
                     x, y, w, h = cv2.boundingRect(cnt)
                     epsilon = 0.03 * cv2.arcLength(cnt, True)
                     approx = cv2.approxPolyDP(cnt, epsilon, True)
@@ -177,40 +179,40 @@ class ROV:
 
                     # print(cnt[0], cnt[1], "...")
                     active_cnts.append(cnt)
-                    if True:
-                        cv2.drawContours(image, [cnt], 0, (0, 255, 0), 1)
-                        cv2.putText(image, str(vertex), (x + int(w / 2) - 5, y + int(h / 2) + 5),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), lineType=cv2.LINE_AA)
+                    cv2.drawContours(image, [cnt], 0, (0, 255, 0), 1)
+                    cv2.putText(image, str(vertex), (x + int(w / 2) - 5, y + int(h / 2) + 5),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), lineType=cv2.LINE_AA)
+                    cv2.imshow('numbers', image)
 
                     if vertex == 2:
-                        if self._num_of_shapes["line"] == 6:
-                            self._num_of_shapes["line"] = 0
+                        if self._num_of_shapes["line"] >= 6:
+                            self._num_of_shapes["line"] = 6
                         else:
                             self._num_of_shapes["line"] += 1
 
-                    if vertex == 3:
-                        if self._num_of_shapes["triangle"] == 6:
-                            self._num_of_shapes["triangle"] = 0
+                    elif vertex == 3:
+                        if self._num_of_shapes["triangle"] >= 6:
+                            self._num_of_shapes["triangle"] = 6
                         else:
                             self._num_of_shapes["triangle"] += 1
 
-                    if vertex == 4:
+                    elif vertex == 4:
                         (x, y, w, h) = cv2.boundingRect(approx)
                         ar = w / float(h)
                         if ar >= 0.5 and ar <= 1.5:
-                            if self._num_of_shapes["rectangle"] == 6:
-                                self._num_of_shapes["rectangle"] = 0
+                            if self._num_of_shapes["rectangle"] >= 6:
+                                self._num_of_shapes["rectangle"] = 6
                             else:
                                 self._num_of_shapes["rectangle"] += 1
                         else:
                             if self._num_of_shapes["line"] >= 6:
-                                self._num_of_shapes["line"] = 0
+                                self._num_of_shapes["line"] = 6
                             else:
                                 self._num_of_shapes["line"] += 1
 
                     else:
-                        if self._num_of_shapes["circle"] == 6:
-                            self._num_of_shapes["circle"] = 0
+                        if self._num_of_shapes["circle"] >= 6:
+                            self._num_of_shapes["circle"] = 6
                         else:
                             self._num_of_shapes["circle"] += 1
         self.status = True
@@ -247,14 +249,16 @@ if __name__ == "__main__":
         rov.preprocessing(rov.cropped)
         rov.white_mask()
         rov.shape_mask(rov.mask)
-        active_cnts = rov.detection(rov.cropped, False)
+        active_cnts = rov.detection(rov.mask, False)
         if rov.status == False:
             print("none")
         else:
             print("OK")
             cv2.drawContours(rov.frame, active_cnts, -1, (0, 255, 0), 2)
+            #cv2.drawContours(rov.cropped, active_cnts, -1, (0, 255, 0), 2)
             rov.show(rov.frame)
             cv2.imshow('frame', rov.frame)
+            #cv2.imshow('cropped', rov.cropped)
 
         if k == 32:
             rov._circle = rov._num_of_shapes["circle"]

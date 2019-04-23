@@ -40,8 +40,8 @@ def capture(cap):
 def mask(frame):
     frame = cv2.resize(frame, (800, 600))
     hsv = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
-    lower = np.array([0,0,0])
-    upper = np.array([60,60,60])
+    lower = np.array([0, 0, 0])
+    upper = np.array([60, 60, 60])
     #lower = np.array([60,120,120])
     #upper = np.array([100,150,150])
     #lower = np.array([114,141,83])
@@ -91,7 +91,7 @@ def calculation(frame, box, width, center):
 
 
 if __name__ == "__main__":
-    capt = cv2.VideoCapture(1)
+    capt = cv2.VideoCapture(0)
     #video = Video(port=4777)
     i = 0
 
