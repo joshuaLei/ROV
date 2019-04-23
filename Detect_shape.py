@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-from time import sleep
-from video import Video
+#from video import Video
 import time
 
 
@@ -234,15 +233,15 @@ class ROV:
 
 if __name__ == "__main__":
     rov = ROV(True)
-    video = Video(port=4777)
+    #video = Video(port=4777)
     i = 0
 
     while True:
         k = cv2.waitKey(1)
-        if not video.frame_available():
-            continue
-        cap = video.frame()
-        #frame = rov.debug()
+        #if not video.frame_available():
+            #continue
+        #cap = video.frame()
+        cap = rov.debug()
         frame = cv2.resize(cap, (800, 600))
         rov.frame = frame
         rov.srcframe = frame
