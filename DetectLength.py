@@ -12,12 +12,12 @@ class ROV():
         self.frame = None
         self.mask = None
 
-        self.areaval = 1000
+        self.areaval = 1300
         self.width = 1.7
         self.rect = 0
         self.box = None
 
-        self.cal_val = 1
+        self.cal_val = 3
 
     def capture(self):
         '''
@@ -44,15 +44,21 @@ class ROV():
 
     def msk(self):
         frame = self.frame
+        cv2.imshow('frame99',frame)
+        kernel = np.ones((7, 7), np.uint8)
+        frame = cv2.dilate(frame, kernel, iterations=1)
+        #frame = cv2.erode(frame, kernel, iterations=1)
+        self.frame = frame
         hsv = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
         lower = np.array([0,0,0])
-        upper = np.array([60,60,60])
+        upper = np.array([50,50,50])
         #lower = np.array([60,120,120])
         #upper = np.array([100,150,150])
         #lower = np.array([114,141,83])
         #upper = np.array([0,255,175])
         mask = cv2.inRange(hsv, lower, upper)
         self.mask = mask
+        cv2.imshow('mask', mask)
 
     def detect(self):
         mask = self.mask
@@ -68,21 +74,22 @@ class ROV():
                 self.center = rect
                 self.frame = frame
                 self.rect = rect
-                self.box = [box]
+                #self.box = [box]
+                self.calculation(box)
                 #print()
                 #return 0
 
-    def calculation(self):
-        x1 = self.box[0][0][0]
-        x2 = self.box[0][1][0]
-        y1 = self.box[0][0][1]
-        y2 = self.box[0][1][1]
+    def calculation(self, box):
+        x1 = box[0][0]
+        x2 = box[1][0]
+        y1 = box[0][1]
+        y2 = box[1][1]
         C1 = math.sqrt(math.pow((x1 - x2), 2) + math.pow((y1 - y2), 2))
 
-        x3 = self.box[0][1][0]
-        x4 = self.box[0][2][0]
-        y3 = self.box[0][1][1]
-        y4 = self.box[0][2][1]
+        x3 = box[1][0]
+        x4 = box[2][0]
+        y3 = box[1][1]
+        y4 = box[2][1]
         C2 = math.sqrt(math.pow((x3 - x4), 2) + math.pow((y3 - y4), 2))
 
         if C1 < C2:
@@ -92,8 +99,26 @@ class ROV():
             ratio = abs(self.width/C2)
             cal = ratio*C1
 
-        #cal = cal + self.cal_val
-        print('calculation',cal)
+        #print(ratio)
+        '''
+        if cal > 12 and cal < 15:
+            self.cal_val = 1
+        elif cal > 15 and cal < 19:
+            self.cal_val = 1.5
+        elif cal > 19 and cal < 23:
+            self.cal_val = 2
+        elif cal > 23 and cal < 28:
+            self.cal_val = 2.5
+        '''
+        if cal > 25 and cal < 28:
+            self.cal_val = 3
+        elif cal > 28 and cal < 32:
+            self.cal_val = 3.5
+        elif cal > 32 and cal < 35:
+            self.cal_val = 4
+        cal = cal - self.cal_val
+
+        #print('calculation',cal)
         cv2.putText(self.frame, 'cal = {}'.format(cal), (int(self.center[0][0]), int(self.center[0][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (215, 228, 41), 2)
         cv2.imshow('frame', self.frame)
 
@@ -119,16 +144,16 @@ if __name__ == "__main__":
 
         rov.msk()
         rov.detect()
-        rov.calculation()
+        #rov.calculation()
         #cv2.imshow('frame', rov.frame)
 
 
         if k == 32:
-            cv2.imshow('freeze', frame)
+            cv2.imshow('freeze', rov.frame)
             continue
 
         if k == ord('s'):
-                cv2.imwrite('photos/image'+str(time.time())+ '.jpg', frame)
+                cv2.imwrite('photos/image'+str(time.time())+ '.jpg', rov.frame)
                 print('save')
                 i+=1
 
