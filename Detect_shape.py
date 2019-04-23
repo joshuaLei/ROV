@@ -47,7 +47,7 @@ class ROV:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.medianBlur(image, 5)
         ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-        cv2.imshow("mask2", thresh)
+        #cv2.imshow("mask2", thresh)
         self.mask = thresh
         # print("preprocess")
         return thresh
@@ -182,7 +182,7 @@ class ROV:
                     cv2.drawContours(image, [cnt], 0, (0, 255, 0), 1)
                     cv2.putText(image, str(vertex), (x + int(w / 2) - 5, y + int(h / 2) + 5),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), lineType=cv2.LINE_AA)
-                    cv2.imshow('numbers', image)
+                    #cv2.imshow('numbers', image)
 
                     if vertex == 2:
                         if self._num_of_shapes["line"] >= 6:
