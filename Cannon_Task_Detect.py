@@ -24,14 +24,14 @@ class ImageTool(object):
         self.tmp_pos_end = []
 
         self.detect_color_from = (0, 0, 0)
-        self.detect_color_to = (180, 255, 255)
-        self.e1 = 10
-        self.e2 = 150
-        self.e3 = 100
+        self.detect_color_to = (255, 255, 255)
+        self.e1 = 60
+        self.e2 = 60
+        self.e3 = 60
 
         self.ref = 0
         self.tmp = 0
-        self.ref_real = 12#24.5 
+        self.ref_real = 47.2#25
         self.tmp_real = 0
 
         self.ref_val = 6
@@ -92,14 +92,14 @@ class ImageTool(object):
                     self.frame = image
         else:
             if event == cv.EVENT_LBUTTONDBLCLK:
-                temp = cv.cvtColor(self.frame, cv.COLOR_BGR2HSV)
-                h, s, v = temp[y, x]
+                #temp = cv.cvtColor(self.frame, cv.COLOR_BGR2HSV)
+                h, s, v = self.frame[y, x]
                 h = int(h)
                 s = int(s)
                 v = int(v)
-                print('h,s,v',h,s,v)
-                self.detect_color_from = (max(h - self.e1, 0), max(s - self.e2, 16), max(v - self.e3, 16))
-                self.detect_color_to = (min(h + self.e1, 180), min(s + self.e2, 240), min(v + self.e3, 240))
+                print('b, g, r',h,s,v)
+                self.detect_color_from = (max(h - self.e1, 0), max(s - self.e2, 0), max(v - self.e3, 0))
+                self.detect_color_to = (min(h + self.e1, 255), min(s + self.e2, 255), min(v + self.e3, 255))
             if event == cv.EVENT_RBUTTONDBLCLK:
                 self.detect_color_from = (0, 0, 0)
                 self.detect_color_to = (180, 255, 255)

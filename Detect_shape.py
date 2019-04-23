@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from time import sleep
-#from video import Video
+from video import Video
 import time
 
 
@@ -46,7 +46,7 @@ class ROV:
     def preprocessing(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.medianBlur(image, 5)
-        ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
         #cv2.imshow("mask2", thresh)
         self.mask = thresh
         # print("preprocess")
@@ -74,7 +74,7 @@ class ROV:
         # Threshold the HSV image to get only white colors
         thresh = cv2.inRange(hsv, lower_white, upper_white)
         '''
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        _, contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         max_area = 100
         max_cnt = None
         for cnt in contours:
@@ -97,7 +97,7 @@ class ROV:
     def shape_mask(self, image):
         thresh = self.preprocessing(self.mask)
         thresh = 255 - thresh
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        _, contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         image_h, image_w, _ = image.shape
         bounding = 0.02
         bounding_x = image_w * bounding
@@ -157,9 +157,10 @@ class ROV:
             image = cv2.resize(image, (800, 450), interpolation=cv2.INTER_AREA)
             #thresh = self.preprocessing(self.cropped)
             lower = np.array([0, 0, 0])
-            upper = np.array([120, 120, 120])
+            upper = np.array([150, 150, 150])
             mask = cv2.inRange(image, lower, upper)
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.imshow('mask',mask)
+            _, contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             active_cnts = []
             for cnt in contours:
                 area = cv2.contourArea(cnt)
@@ -233,18 +234,18 @@ class ROV:
 
 if __name__ == "__main__":
     rov = ROV(True)
-    #video = Video(port=4777)
+    video = Video(port=4777)
     i = 0
 
     while True:
         k = cv2.waitKey(1)
-        #if not video.frame_available():
-            #continue
-        #cap = video.frame()
-        #frame = cv2.resize(cap, (800, 600))
-        #rov.frame = frame
-        frame = rov.debug()
-        frame = cv2.resize(frame, (800, 600))
+        if not video.frame_available():
+            continue
+        cap = video.frame()
+        #frame = rov.debug()
+        frame = cv2.resize(cap, (800, 600))
+        rov.frame = frame
+        rov.srcframe = frame
         rov.overlay(frame)
         rov.preprocessing(rov.cropped)
         rov.white_mask()
@@ -271,7 +272,7 @@ if __name__ == "__main__":
             break
 
         if k == ord('s'):
-            cv2.imwrite('photos/image' + str(time.time()) + '.jpg', rov.source_img)
+            cv2.imwrite('photos/image' + str(time.time()) + '.jpg', rov.srcframe)
             print('save')
             i += 1
 

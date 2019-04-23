@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 import time
-#from video import Video
+from video import Video
 
 class ROV():
     def __init__(self):
@@ -45,13 +45,13 @@ class ROV():
     def msk(self):
         frame = self.frame
         cv2.imshow('frame99',frame)
-        kernel = np.ones((7, 7), np.uint8)
+        kernel = np.ones((12, 12), np.uint8)
         frame = cv2.dilate(frame, kernel, iterations=1)
         #frame = cv2.erode(frame, kernel, iterations=1)
         self.frame = frame
         hsv = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
         lower = np.array([0,0,0])
-        upper = np.array([50,50,50])
+        upper = np.array([80,80,80])
         #lower = np.array([60,120,120])
         #upper = np.array([100,150,150])
         #lower = np.array([114,141,83])
@@ -63,7 +63,7 @@ class ROV():
     def detect(self):
         mask = self.mask
         frame = self.frame
-        contours, hierarcy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        _, contours, hierarcy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > self.areaval:
@@ -126,17 +126,17 @@ class ROV():
 if __name__ == "__main__":
     rov = ROV()
     i = 0
-    #video = Video(port=4777)
+    video = Video(port=4777)
     while True:
         #frame = rov.capture()
-        cap = rov.debug()
-        #if not video.frame_available():
-            #continue
+        #cap = rov.debug()
+        if not video.frame_available():
+            continue
 
-        #cap = video.frame()
-        #frame = cap
-        #rov.frame = cap
-        #rov.srcframe = cap
+        cap = video.frame()
+        frame = cap
+        rov.frame = cap
+        rov.srcframe = cap
 
         frame = cv2.resize(cap, (800, 600))
         rov.frame = frame
