@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 #from video import Video
 import time
+from PIL import Image, ImageEnhance
 
 
 class ROV:
@@ -36,13 +37,7 @@ class ROV:
         return self.frame
         #print("capture")
 
-    def capture(self):
-        success, self.frame = self.video1.read()
-        self.frame = cv2.flip(self.frame, 3)
-        self.srcframe = self.frame
-        return self.frame
-
-    def preprocessing(self, image):
+    def msk(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = cv2.medianBlur(image, 5)
         ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
@@ -51,20 +46,28 @@ class ROV:
         # print("preprocess")
         return thresh
 
+    def preprocessing(self, image):
+        #image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+        image = ImageEnhance.Color(Image.fromarray(image)).enhance(1.5)
+        image = ImageEnhance.Brightness(image).enhance(1.5)
+        image = ImageEnhance.Contrast(image).enhance(1.5)
+        image = ImageEnhance.Sharpness(image).enhance(1.5)
+        return np.array(image)
+
     def overlay(self, frame):
         overlay = frame.copy()
         cropped = frame.copy()
-        img = frame[120:480, 120:680].copy()
+        img = frame[120:480, 120:680, :].copy()
         cv2.rectangle(overlay, (120, 120), (680, 480), (0, 0, 255), -1)
         cv2.addWeighted(overlay, 0.3, cropped, 1 - 0.3, 0, cropped)
-        self.frame = cropped
         self.cropped = img
+        self.frame = cropped
         #cv2.imshow('test', self.frame)
-        # print("overlay")
+        #print("overlay")
 
     def white_mask(self):
         #hsv = cv2.cvtColor(self.cropped, cv2.COLOR_BGR2HSV)
-        thresh = self.preprocessing(self.cropped)
+        thresh = self.msk(self.cropped)
         '''
         sensitivity = 50
         lower_white = np.array([0, 0, 0])
@@ -73,7 +76,7 @@ class ROV:
         # Threshold the HSV image to get only white colors
         thresh = cv2.inRange(hsv, lower_white, upper_white)
         '''
-        _, contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         max_area = 100
         max_cnt = None
         for cnt in contours:
@@ -93,11 +96,12 @@ class ROV:
         self.mask = self.cropped[y:y + h, x:x + w].copy()
         #cv2.imshow("white_mask", self.mask)
 
-    def shape_mask(self, image):
-        thresh = self.preprocessing(self.mask)
+    def shape_mask(self):
+        thresh = self.msk(self.mask)
         thresh = 255 - thresh
-        _, contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        image_h, image_w, _ = image.shape
+        image = self.mask
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        image_h, image_w= image.shape
         bounding = 0.02
         bounding_x = image_w * bounding
         bounding_y = image_h * bounding
@@ -137,9 +141,9 @@ class ROV:
         #cv2.waitKey(0)
 
         self.mask = image[min_y:max_y, min_x:max_x].copy()
-        # print("shape_mask")
-        #cv2.imshow("shape_mask", self.mask)
-
+        self.cropped = self.cropped[min_y:max_y, min_x:max_x].copy()
+        #print("shape_mask")
+        #cv2.imshow('shape_mask',self.cropped)
     def detection(self, image, is_draw=True):
         if image.shape[0] == 0 or image.shape[1] == 0:
             self.status = False
@@ -154,12 +158,14 @@ class ROV:
             #rate_x = 800 / org_w
             #rate_y = 450 / org_h
             image = cv2.resize(image, (800, 450), interpolation=cv2.INTER_AREA)
-            #thresh = self.preprocessing(self.cropped)
+            cv2.imshow('image',image)
+            #thresh = self.mask(self.cropped)
+            print(image.shape)
             lower = np.array([0, 0, 0])
             upper = np.array([150, 150, 150])
             mask = cv2.inRange(image, lower, upper)
             cv2.imshow('mask',mask)
-            _, contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             active_cnts = []
             for cnt in contours:
                 area = cv2.contourArea(cnt)
@@ -241,15 +247,16 @@ if __name__ == "__main__":
         #if not video.frame_available():
             #continue
         #cap = video.frame()
-        cap = rov.debug()
+        img = rov.debug()
+        rov.srcframe = img
+        cap = rov.preprocessing(img)
         frame = cv2.resize(cap, (800, 600))
         rov.frame = frame
-        rov.srcframe = frame
         rov.overlay(frame)
-        rov.preprocessing(rov.cropped)
+        rov.msk(rov.cropped)
         rov.white_mask()
-        rov.shape_mask(rov.mask)
-        active_cnts = rov.detection(rov.mask, False)
+        rov.shape_mask()
+        active_cnts = rov.detection(rov.cropped, False)
         if rov.status == False:
             print("none")
         else:
