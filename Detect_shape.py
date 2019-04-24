@@ -57,7 +57,7 @@ class ROV:
     def overlay(self, frame):
         overlay = frame.copy()
         cropped = frame.copy()
-        img = frame[120:480, 120:680, :].copy()
+        img = frame[120:480, 120:680].copy()
         cv2.rectangle(overlay, (120, 120), (680, 480), (0, 0, 255), -1)
         cv2.addWeighted(overlay, 0.3, cropped, 1 - 0.3, 0, cropped)
         self.cropped = img
