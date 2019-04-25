@@ -2,7 +2,7 @@ import cv2 as cv
 import time
 import random
 import math
-#from video import Video
+from video import Video
 
 
 class ImageTool(object):
@@ -32,7 +32,7 @@ class ImageTool(object):
 
         self.ref = 0
         self.tmp = 0
-        self.ref_real = 7#25#2
+        self.ref_real = 2#7#25
         self.tmp_real = 0
 
         self.ref_val = 6
@@ -129,24 +129,35 @@ if __name__ == "__main__":
     cv.namedWindow("frame")
     cv.setMouseCallback("frame", tool.on_mouse_frame)
 
-    #video = Video(port=4777)
+    video = Video(port=4777)
 
     i = 0
+
+    num = int(input())
+    if num == 1:
+        tool.ref_real = 7
+        tool.minus = 10
+    elif num == 2:
+        tool.ref_real = 2
+        tool.minus = 0
+    else:
+        tool.ref_real = 7
+        tool.minus = 10
 
     while True:
         if not tool.pause:
             #frame = tool.capture()
-            frame = tool.debug()
-            #if not video.frame_available():
-                #continue
+            #frame = tool.debug()
+            if not video.frame_available():
+                continue
 
-            #frame = video.frame()
+            frame = video.frame()
             tool.srcframe = frame
             frame = cv.resize(frame, (800, 600))
             tool.overlay(frame)
             hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
             mask = cv.inRange(hsv, tool.detect_color_from, tool.detect_color_to)
-            contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+            _, contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
             cv.drawContours(frame, contours, -1, (0, 255, 0), 2)
         else:
             frame = tool.frame
