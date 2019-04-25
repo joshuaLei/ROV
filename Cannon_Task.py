@@ -8,9 +8,10 @@ import math
 class ImageTool(object):
 
     def __init__(self):
-        #self.video1 = cv.VideoCapture(1)
+        self.video1 = cv.VideoCapture(0)
         #self.video2 = Video(port=4777)
         self.frame = None
+        self.cropped = None
 
         self.pause = False
         self.mode = 0
@@ -31,31 +32,24 @@ class ImageTool(object):
 
         self.ref = 0
         self.tmp = 0
-        self.ref_real = 47.2#25
+        self.ref_real = 7#25#2
         self.tmp_real = 0
 
         self.ref_val = 6
-
-    def capture(self):
-        '''
-        success, self.frame = self.video2.read()
-        self.frame = cv.flip(self.frame, 3)
-        return self.frame
-
-        '''
-        video = self.video2
-        if not video.frame_available():
-            return None
-        cap = video.frame()
-        frame = cv.resize(cap, (800, 600))
-        self.frame = frame
-        self.srcframe = cap
-        return self.frame
 
     def debug(self):
         success, self.frame = self.video1.read()
         self.frame = cv.flip(self.frame, 3)
         return self.frame
+
+    def overlay(self, frame):
+        overlay = frame.copy()
+        cropped = frame.copy()
+        img = frame[120:480, 120:680].copy()
+        cv.rectangle(overlay, (120, 120), (680, 480), (0, 0, 255), -1)
+        cv.addWeighted(overlay, 0.3, cropped, 1 - 0.3, 0, cropped)
+        self.cropped = img
+        self.frame = cropped
 
     def on_mouse_frame(self, event, x, y, flags, param):
         if self.pause:
@@ -145,13 +139,15 @@ if __name__ == "__main__":
                 #continue
 
             #frame = video.frame()
+            tool.srcframe = frame
             frame = cv.resize(frame, (800, 600))
-            tool.frame = frame
+            tool.overlay(frame)
             hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
             mask = cv.inRange(hsv, tool.detect_color_from, tool.detect_color_to)
-            _, contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
             cv.drawContours(frame, contours, -1, (0, 255, 0), 2)
         else:
+            tool.overlay(frame)
             frame = tool.frame
 
         cv.imshow("frame", frame)
@@ -166,7 +162,7 @@ if __name__ == "__main__":
             tool.srcframe= frame.copy()
         if key == ord('s'):
             file = "photos/IMG_%s_%d.jpg" % (time.strftime("%Y%m%d_%H%M%S", time.localtime()), random.randint(1, 1000))
-            cv.imwrite(file, tool.frame)
+            cv.imwrite(file, tool.srcframe)
 
         if key == ord('c'):
             tool.calculation_length(tool.ref_pos_start, tool.ref_pos_end, tool.tmp_pos_start, tool.tmp_pos_end)
