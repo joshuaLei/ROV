@@ -37,6 +37,8 @@ class ImageTool(object):
 
         self.ref_val = 6
 
+        self.minus = 11
+
     def debug(self):
         success, self.frame = self.video1.read()
         self.frame = cv.flip(self.frame, 3)
@@ -45,8 +47,8 @@ class ImageTool(object):
     def overlay(self, frame):
         overlay = frame.copy()
         cropped = frame.copy()
-        img = frame[120:480, 120:680].copy()
-        cv.rectangle(overlay, (120, 120), (680, 480), (0, 0, 255), -1)
+        img = frame[20:520, 200:780].copy()
+        cv.rectangle(overlay, (20, 200), (780, 520), (0, 0, 255), -1)
         cv.addWeighted(overlay, 0.3, cropped, 1 - 0.3, 0, cropped)
         self.cropped = img
         self.frame = cropped
@@ -119,7 +121,7 @@ class ImageTool(object):
 
     def calculation_result(self, ref, tmp):
         print('ref_real', self.ref_real)
-        self.tmp_real = ((self.ref_real * tmp)/ref)
+        self.tmp_real = ((self.ref_real * tmp)/ref) - self.minus
         print("result", self.tmp_real)
 
 if __name__ == "__main__":
@@ -147,10 +149,9 @@ if __name__ == "__main__":
             contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
             cv.drawContours(frame, contours, -1, (0, 255, 0), 2)
         else:
-            tool.overlay(frame)
             frame = tool.frame
 
-        cv.imshow("frame", frame)
+        cv.imshow("frame",tool.frame)
 
         key = cv.waitKey(1)
 
