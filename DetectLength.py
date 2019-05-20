@@ -126,14 +126,14 @@ class ROV():
 if __name__ == "__main__":
     rov = ROV()
     i = 0
-    #video = Video(port=4777)
+    video = Video(port=4777)
     while True:
         #frame = rov.capture()
-        cap = rov.debug()
-        #if not video.frame_available():
-            #continue
+        #cap = rov.debug()
+        if not video.frame_available():
+            continue
 
-        #cap = video.frame()
+        cap = video.frame()
         frame = cap
         rov.frame = cap
         rov.srcframe = cap
