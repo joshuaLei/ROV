@@ -230,7 +230,7 @@ class ROV:
                                 self._num_of_shapes["line"] = 6
                             else:
                                 self._num_of_shapes["line"] += 1
-        return cropped
+        return cropped, area
 
     def show(self, img):
         cv2.circle(img, (150, 40), 20, (0, 0, 255), -1)
@@ -266,25 +266,18 @@ if __name__ == "__main__":
         rov.msk(rov.cropped)
         img, x1, y1, w1, h1 = rov.white_mask()
         img2, x2, y2, w2, h2 = rov.shape_mask()
-        print(x1, y1, w1, h1)
-        print(x2, y2, w2, h2)
-        frame = rov.detection(img2, False)
-        src =  rov.srcframe
-        overlay = src.copy()
-        # cv2.circle(src, (x + 160, y + 180), 10, (255, 0, 0), -1)
-        # cv2.circle(src, (x + w + 160, y + 180), 10, (255, 0, 0), -1)
-        # cv2.circle(src, (x + 160, y + h + 180), 10, (255, 0, 0), -1)
-        # cv2.circle(src, (x1 + w + 160, y + h + 180), 10, (255, 0, 0), -1)
-        frame = cv2.resize(frame, (w1, h1))
-        cv2.imshow('999', frame)
-        cv2.waitKey(0)
-        src[y1:y1 + 180, x1 + x2:x1 + x2 + 160] = frame
-        rov.show(src)
-        color = src.copy()
-        cv2.rectangle(src, (180, 160), (690, 600), (0, 0, 255), -1)
-        color = cv2.addWeighted(src, 0.3, color, 1 - 0.3, 0)
-        cv2.imshow('frame', color)
-        #print('error')
+        frame, area = rov.detection(img, False)
+        if area == 0:
+            print('error')
+        else:
+            src =  rov.srcframe
+            frame = cv2.resize(frame, (w1, h1))
+            src[y1 + 180:y1 + h1 + 180, x1 + 160:x1 + w1 + 160] = frame
+            rov.show(src)
+            color = src.copy()
+            cv2.rectangle(src, (180, 160), (690, 600), (0, 0, 255), -1)
+            color = cv2.addWeighted(src, 0.3, color, 1 - 0.3, 0)
+            cv2.imshow('frame', color)
 
         if k == 32:
             rov._circle = rov._num_of_shapes["circle"]
